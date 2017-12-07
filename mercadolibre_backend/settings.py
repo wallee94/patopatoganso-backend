@@ -1,4 +1,5 @@
 import os
+from celery.schedules import crontab
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -11,13 +12,13 @@ DEBUG = True
 if DEBUG:
     SECRET_KEY = '$v%)q_njh2cth&$12isnpiy1q6l4s!%4-m_(hd7w!ep#3*z$oj'
 else:
-    with open('/etc/secret_key.txt') as f:
+    secret_key_path = os.path.join(BASE_DIR, '/etc/secret_key.txt')
+    with open(secret_key_path) as f:
         SECRET_KEY = f.read().strip()
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["45.32.196.12", "patopatoganso.com.mx"]
 if DEBUG:
     ALLOWED_HOSTS.append("localhost")
-
 
 # Application definition
 
@@ -78,6 +79,19 @@ CORS_ALLOW_HEADERS = (
     'time-zone',
 )
 
+CELERY_BROKER_URL = 'pyamqp://'
+CELERY_RESULT_BACKEND = 'rpc://'
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
+CELERY_BEAT_SCHEDULE = {
+    'task-number-one': {
+        'task': 'tracking.tasks.task_get_data_from_scrapinghub',
+        'schedule': crontab(minute=0, hour=9),
+    },
+}
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -96,7 +110,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'mercadolibre_backend.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/1.11/ref/settings/#databases
 
@@ -108,13 +121,15 @@ if DEBUG:
         }
     }
 else:
-    with open('/etc/DB_pass.txt') as f:
+    database_cred_path = os.path.join(BASE_DIR, '/etc/database_cred.txt')
+    with open(database_cred_path) as f:
+        name, user, password = f.read().split(",")
         DATABASES = {
             'default': {
                 'ENGINE': 'django.db.backends.postgresql_psycopg2',
-                'NAME': 'aquaticapi',
-                'USER': 'camilord',
-                'PASSWORD': f.read().strip(),
+                'NAME': name.strip(),
+                'USER': user.strip(),
+                'PASSWORD': password.strip(),
                 'HOST': 'localhost',
                 'PORT': '',
             }
