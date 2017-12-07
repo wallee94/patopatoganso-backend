@@ -28,13 +28,17 @@ def task_get_data_from_scrapinghub():
             scraping_job = project.jobs.get(job_dict["key"])
             items = {}
 
+            print("Getting items from scrapinghub")
             for item in scraping_job.items.iter():
                 items[item.get("id")] = item
             items_ids = list(items.keys())
             prices_qs = {}
             reports_qs = []
 
+            print("Getting old reports from db")
             old_reports = Report.objects.filter(ml_id__in=items_ids)
+            print("%d old reports found" % len(old_reports))
+
             for report in old_reports:
                 item = items.get(report.ml_id)
                 date = datetime.strptime(item.get("date"), "%Y-%m-%d").date()
