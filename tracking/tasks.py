@@ -23,10 +23,6 @@ def task_get_data_from_scrapinghub():
 
         # if the job haven't been saved before, save its items
         if job_key and not Job.objects.filter(code=job_key):
-            job = Job()
-            job.code = job_key
-            job.save()
-
             start_time = time()
             print("Starting job = %s" % job_key)
 
@@ -84,6 +80,9 @@ def task_get_data_from_scrapinghub():
                         price.report = report
                         price.save()
 
+            job = Job()
+            job.code = job_key
+            job.save()
             print("Job done in %f sec" % (time() - start_time))
 
 def clean_price(price):
