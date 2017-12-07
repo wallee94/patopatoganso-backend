@@ -41,6 +41,7 @@ def task_get_data_from_scrapinghub():
                         new_price = Price()
                         new_price.price = item_price
                         new_price.report = prices.first().report
+                        new_price.date = date
                         new_price.save()
 
                 else:
