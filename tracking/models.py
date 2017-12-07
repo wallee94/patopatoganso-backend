@@ -33,7 +33,7 @@ class Price(models.Model):
 
 
 class Job(models.Model):
-    code = models.CharField(max_length=10, null=False, blank=False)
+    code = models.CharField(max_length=15, null=False, blank=False)
     date = models.DateField(auto_now_add=True)
 
     def __str__(self):
