@@ -26,7 +26,7 @@ def task_get_data_from_scrapinghub():
 
             scraping_job = project.jobs.get(job_dict["key"])
             for item in scraping_job.items.iter():
-                date = datetime.strptime("2017-12-12", item.get("date"))
+                date = datetime.strptime(item.get("date"), "%Y-%m-%d")
                 prices = Price.objects.filter(report__id=item.get("id")).order_by("-date")
                 item_price = float(clean_price(item.get("price")))
 
