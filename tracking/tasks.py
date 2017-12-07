@@ -9,6 +9,7 @@ from django.db import transaction
 from scrapinghub import ScrapinghubClient
 
 from .models import Report, Price, Job
+from time import time
 
 
 @task()
@@ -25,6 +26,9 @@ def task_get_data_from_scrapinghub():
             job = Job()
             job.code = job_key
             job.save()
+
+            start_time = time()
+            print("Starting job = %s" % job_key)
 
             scraping_job = project.jobs.get(job_dict["key"])
             reports_qs = []
@@ -69,10 +73,12 @@ def task_get_data_from_scrapinghub():
 
             # save everything in one commit
             with transaction.atomic():
-                for price in prices_qs:
-                    price.save()
                 for report in reports_qs:
                     report.save()
+                for price in prices_qs:
+                    price.save()
+
+            print("Job done in %f sec" % (time() - start_time))
 
 
 def clean_price(price):
