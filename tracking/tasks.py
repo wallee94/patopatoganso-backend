@@ -1,15 +1,14 @@
 from __future__ import absolute_import, unicode_literals
 
 from datetime import datetime
+from time import time
 
 import re
 from celery import task
-from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from scrapinghub import ScrapinghubClient
 
 from .models import Report, Price, Job
-from time import time
 
 
 @task()
@@ -27,48 +26,50 @@ def task_get_data_from_scrapinghub():
             print("Starting job = %s" % job_key)
 
             scraping_job = project.jobs.get(job_dict["key"])
-            reports_qs = []
-            prices_qs = {}
+            items = {}
 
             for item in scraping_job.items.iter():
+                items[item.get("id")] = item
+            items_ids = items.keys()
+            prices_qs = {}
+            reports_qs = []
+
+            old_reports = Report.objects.filter(ml_id__in=items_ids)
+            for report in old_reports:
+                item = items.get(report.ml_id)
                 date = datetime.strptime(item.get("date"), "%Y-%m-%d").date()
                 item_price = float(clean_price(item.get("price")))
 
-                # if item was already saved in this job, escape
-                if item.get("id") in prices_qs:
-                    continue
-
-                try:
-                    # if report exists, update it
-                    report = Report.objects.get(ml_id=item.get("id"))
-
-                    if report.last_date > date:
-                        report.last_date = date
-                        report.last_price = item_price
-                    reports_qs.append(report)
-
-                    if report.last_price != item_price:
-                        # if price changed, save new price instance
-                        new_price = Price()
-                        new_price.price = item_price
-                        new_price.date = date
-                        prices_qs[report.ml_id] = new_price
-
-                except ObjectDoesNotExist:
-                    # if report does not exist, save new report and price instances
-                    report = Report()
-                    report.ml_id = item.get("id")
-                    report.title = item.get("title")
-                    report.url = item.get("url")
+                if report.last_date > date:
                     report.last_date = date
                     report.last_price = item_price
-                    report.is_new = item.get("is_new")
-                    reports_qs.append(report)
+                reports_qs.append(report)
 
+                if report.last_price != item_price:
+                    # if price changed, save new price instance
                     new_price = Price()
                     new_price.price = item_price
                     new_price.date = date
                     prices_qs[report.ml_id] = new_price
+
+                items.pop(report.ml_id, None)
+
+            for item_id in items_ids:
+                # if report does not exist, save new report and price instances
+                item = items.get(item_id)
+                report = Report()
+                report.ml_id = item.get("id")
+                report.title = item.get("title")
+                report.url = item.get("url")
+                report.last_date = date
+                report.last_price = item_price
+                report.is_new = item.get("is_new")
+                reports_qs.append(report)
+
+                new_price = Price()
+                new_price.price = item_price
+                new_price.date = date
+                prices_qs[report.ml_id] = new_price
 
             print("Atomic transaction started after %f sec" % (time() - start_time))
             # save everything in one commit
