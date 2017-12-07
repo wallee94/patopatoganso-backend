@@ -32,7 +32,7 @@ def task_get_data_from_scrapinghub():
 
             scraping_job = project.jobs.get(job_dict["key"])
             reports_qs = []
-            prices_qs = []
+            prices_qs = {}
 
             for item in scraping_job.items.iter():
                 date = datetime.strptime(item.get("date"), "%Y-%m-%d").date()
@@ -51,8 +51,7 @@ def task_get_data_from_scrapinghub():
                         new_price = Price()
                         new_price.price = item_price
                         new_price.date = date
-                        new_price.report = report
-                        prices_qs.append(new_price)
+                        prices_qs[report.ml_id] = new_price
 
                 except ObjectDoesNotExist:
                     # if report does not exist, save new report and price instances
@@ -67,19 +66,20 @@ def task_get_data_from_scrapinghub():
 
                     new_price = Price()
                     new_price.price = item_price
-                    new_price.report = report
                     new_price.date = date
-                    prices_qs.append(new_price)
+                    prices_qs[report.ml_id] = new_price
 
+            print("Atomic transaction started after %f sec" % (time() - start_time))
             # save everything in one commit
             with transaction.atomic():
                 for report in reports_qs:
                     report.save()
-                for price in prices_qs:
-                    price.save()
+                    price = prices_qs.get(report.ml_id)
+                    if price:
+                        price.report = report
+                        price.save()
 
             print("Job done in %f sec" % (time() - start_time))
-
 
 def clean_price(price):
     return re.sub(r'[^\d+]', '', price)
