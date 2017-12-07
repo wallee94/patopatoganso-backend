@@ -37,6 +37,11 @@ def task_get_data_from_scrapinghub():
             for item in scraping_job.items.iter():
                 date = datetime.strptime(item.get("date"), "%Y-%m-%d").date()
                 item_price = float(clean_price(item.get("price")))
+
+                # if item was already saved in this job, escape
+                if item.get("id") in prices_qs:
+                    continue
+
                 try:
                     # if report exists, update it
                     report = Report.objects.get(ml_id=item.get("id"))
