@@ -16,6 +16,7 @@ class Report(models.Model):
     title = models.CharField(max_length=150, null=False, blank=False)
     url = models.CharField(max_length=200, null=False, blank=False)
     last_date = models.DateField()
+    last_price = models.FloatField(null=False, blank=False)
     is_new = models.BooleanField()
 
     def __str__(self):
