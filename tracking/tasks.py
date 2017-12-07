@@ -30,7 +30,7 @@ def task_get_data_from_scrapinghub():
 
             for item in scraping_job.items.iter():
                 items[item.get("id")] = item
-            items_ids = items.keys()
+            items_ids = list(items.keys())
             prices_qs = {}
             reports_qs = []
 
@@ -52,7 +52,7 @@ def task_get_data_from_scrapinghub():
                     new_price.date = date
                     prices_qs[report.ml_id] = new_price
 
-                items.pop(report.ml_id, None)
+                items_ids.remove(report.ml_id)
 
             for item_id in items_ids:
                 # if report does not exist, save new report and price instances
