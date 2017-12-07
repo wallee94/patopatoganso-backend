@@ -34,6 +34,7 @@ def task_get_data_from_scrapinghub():
                     # if prices is not empty, update the last_date from the report
                     report = prices.first().report
                     report.last_date = max(date, report.last_date)
+                    report.save()
 
                     if prices.first().price != item_price:
                         # if price changed, save new price instance
