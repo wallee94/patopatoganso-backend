@@ -4,7 +4,8 @@ from .models import Report, Price
 
 class PriceAdmin(admin.ModelAdmin):
     list_display = ('report', 'price', 'date')
-    readonly_fields = ('report', 'price', 'date')
+    readonly_fields = ('date',)
+    raw_id_fields = ('report',)
 
 
 class ReportAdmin(admin.ModelAdmin):

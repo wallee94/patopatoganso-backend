@@ -4,4 +4,5 @@
 **/static
 *.pyc
 *.sqlite3
+*.pid
 celerybeat-schedule

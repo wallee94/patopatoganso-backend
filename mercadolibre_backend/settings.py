@@ -79,6 +79,9 @@ CORS_ALLOW_HEADERS = (
     'time-zone',
 )
 
+CELERY_IMPORTS = (
+    'tracking.tasks',
+)
 CELERY_BROKER_URL = 'pyamqp://'
 CELERY_RESULT_BACKEND = 'rpc://'
 CELERY_ACCEPT_CONTENT = ['application/json']
@@ -86,7 +89,7 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
 CELERY_BEAT_SCHEDULE = {
-    'task-number-one': {
+    'task_get_data_from_scrapinghub': {
         'task': 'tracking.tasks.task_get_data_from_scrapinghub',
         'schedule': crontab(minute=0, hour=9),
     },
