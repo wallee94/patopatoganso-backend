@@ -15,6 +15,7 @@ class Report(models.Model):
     ml_id = models.CharField(max_length=20, null=False, blank=False)
     title = models.CharField(max_length=150, null=False, blank=False)
     url = models.CharField(max_length=200, null=False, blank=False)
+    first_date = models.DateField()
     last_date = models.DateField()
     last_price = models.FloatField(null=False, blank=False)
     is_new = models.BooleanField()
@@ -26,7 +27,7 @@ class Report(models.Model):
 class Price(models.Model):
     report = models.ForeignKey(Report, related_name="from_report")
     price = models.FloatField(null=False, blank=False)
-    date = models.DateField()
+    last_date = models.DateField()
 
     def __str__(self):
         return self.report.title

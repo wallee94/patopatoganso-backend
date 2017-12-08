@@ -16,9 +16,8 @@ def task_get_data_from_scrapinghub():
     client = ScrapinghubClient(api_key)
     project = client.get_project(260622)
 
-    # order last 8 jobs by older first
-    scraping_jobs = project.jobs.list(spider='mercadolibre.com.mx', state='finished', count=8)[::-1]
-    for job_dict in scraping_jobs:
+    # iter through last 8 jobs by newer first
+    for job_dict in project.jobs.iter(spider='mercadolibre.com.mx', state='finished', count=8):
         job_key = job_dict.get("key")
 
         # if the job haven't been saved before, save its items
@@ -26,7 +25,7 @@ def task_get_data_from_scrapinghub():
             old_reports = {}
             print("Getting data from job = %s" % job_key)
 
-            # import all reports in db to cache to avoid multiple commits
+            # import recent reports from db to cache to avoid multiple commits
             for report in Report.objects.filter(last_date__gte=str(datetime.now().date() - timedelta(7))):
                 old_reports[report.ml_id] = report
 
@@ -48,9 +47,9 @@ def task_get_data_from_scrapinghub():
                     # if there's a report for this item already saved, update it
                     report = old_reports[item_id]
 
-                    if report.last_date > date:
-                        report.last_date = date
-                        report.last_price = item_price
+                    # if the report already exists, it must be newer than the item due to the jobs iter order
+                    # so we just have to update the first_date field
+                    report.first_date = date
                     reports_qs.append(report)
 
                     if report.last_price != item_price:
@@ -66,6 +65,7 @@ def task_get_data_from_scrapinghub():
                     report.ml_id = item_id
                     report.title = item.get("title")
                     report.url = item.get("url")
+                    report.first_date = date
                     report.last_date = date
                     report.last_price = item_price
                     report.is_new = item.get("is_new")
