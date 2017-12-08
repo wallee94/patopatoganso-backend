@@ -44,11 +44,9 @@ def task_get_data_from_scrapinghub():
                 date = datetime.strptime(item.get("date"), "%Y-%m-%d").date()
                 item_price = float(clean_price(item.get("price")))
                 if item_id in old_reports:
-                    # if there's a report for this item already saved, update it
-                    report = old_reports[item_id]
-
                     # if the report already exists, it must be newer than the item due to the jobs iter order
                     # so we just have to update the first_date field
+                    report = old_reports[item_id]
                     report.first_date = date
                     reports_qs.append(report)
 
