@@ -42,11 +42,11 @@ def task_get_data_from_scrapinghub():
                 if item_id in items_done:
                     continue
 
+                date = datetime.strptime(item.get("date"), "%Y-%m-%d").date()
+                item_price = float(clean_price(item.get("price")))
                 if item_id in old_reports:
                     # if there's a report for this item already saved, update it
                     report = old_reports[item_id]
-                    date = datetime.strptime(item.get("date"), "%Y-%m-%d").date()
-                    item_price = float(clean_price(item.get("price")))
 
                     if report.last_date > date:
                         report.last_date = date
