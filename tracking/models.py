@@ -14,6 +14,7 @@ def create_auth_token(sender, instance=None, created=False, **kwargs):
 class Report(models.Model):
     ml_id = models.CharField(max_length=20, null=False, blank=False)
     title = models.CharField(max_length=150, null=False, blank=False)
+    clean_title = models.CharField(max_length=150, null=False, blank=False)
     url = models.CharField(max_length=200, null=False, blank=False)
     first_date = models.DateField()
     last_date = models.DateField()

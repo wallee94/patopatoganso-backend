@@ -6,6 +6,7 @@ import re
 from celery import task
 from django.db import transaction
 from scrapinghub import ScrapinghubClient
+from .utils import get_clean_title
 
 from .models import Report, Price, Job
 
@@ -59,9 +60,11 @@ def task_get_data_from_scrapinghub():
 
                 else:
                     # if there's no report yet for this item, create it
+                    title = item.get("title")
                     report = Report()
                     report.ml_id = item_id
-                    report.title = item.get("title")
+                    report.title = title
+                    report.clean_title = get_clean_title(title)
                     report.url = item.get("url")
                     report.first_date = date
                     report.last_date = date
@@ -93,4 +96,5 @@ def task_get_data_from_scrapinghub():
 
 
 def clean_price(price):
-    return re.sub(r'[^\d+]', '', price)
+    return re.sub(r'[^\d+\.]', '', price)
+
