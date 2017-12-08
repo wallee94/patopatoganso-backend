@@ -54,7 +54,7 @@ def task_get_data_from_scrapinghub():
                         # if price changed, save new price instance
                         new_price = Price()
                         new_price.price = item_price
-                        new_price.date = date
+                        new_price.last_date = date
                         prices_qs[report.ml_id] = new_price
 
                 else:
@@ -71,7 +71,7 @@ def task_get_data_from_scrapinghub():
 
                     new_price = Price()
                     new_price.price = item_price
-                    new_price.date = date
+                    new_price.last_date = date
                     prices_qs[report.ml_id] = new_price
 
                 items_done.add(item_id)

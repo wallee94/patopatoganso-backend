@@ -1,11 +1,15 @@
 from django.contrib import admin
-from .models import Report, Price
+from .models import *
 
 
 class PriceAdmin(admin.ModelAdmin):
-    list_display = ('report', 'price', 'date')
-    readonly_fields = ('date',)
+    list_display = ('report', 'price', 'last_date')
+    readonly_fields = ('last_date',)
     raw_id_fields = ('report',)
+
+
+class JobAdmin(admin.ModelAdmin):
+    list_display = ('code', 'date')
 
 
 class ReportAdmin(admin.ModelAdmin):
@@ -14,3 +18,4 @@ class ReportAdmin(admin.ModelAdmin):
 
 admin.site.register(Report, admin_class=ReportAdmin)
 admin.site.register(Price, admin_class=PriceAdmin)
+admin.site.register(Job, admin_class=JobAdmin)
