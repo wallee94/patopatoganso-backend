@@ -1,11 +1,9 @@
 from __future__ import absolute_import, unicode_literals
 
 from datetime import datetime, timedelta
-from time import time
 
 import re
 from celery import task
-from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from scrapinghub import ScrapinghubClient
 
@@ -18,20 +16,19 @@ def task_get_data_from_scrapinghub():
     client = ScrapinghubClient(api_key)
     project = client.get_project(260622)
 
-    for job_dict in project.jobs.iter(spider='mercadolibre.com.mx', state='finished', count=10):
+    # order last 8 jobs by older first
+    scraping_jobs = project.jobs.list(spider='mercadolibre.com.mx', state='finished', count=8)[::-1]
+    for job_dict in scraping_jobs:
         job_key = job_dict.get("key")
 
         # if the job haven't been saved before, save its items
         if job_key and not Job.objects.filter(code=job_key):
-            start_time = time()
-            print("Starting job = %s" % job_key)
             old_reports = {}
+            print("Getting data from job = %s" % job_key)
 
-            print("Loading reports from db...")
+            # import all reports in db to cache to avoid multiple commits
             for report in Report.objects.filter(last_date__gte=str(datetime.now().date() - timedelta(7))):
                 old_reports[report.ml_id] = report
-
-            print("Old reports loaded in cache")
 
             items_done = set()
             prices_qs = {}
@@ -40,10 +37,13 @@ def task_get_data_from_scrapinghub():
             scraping_job = project.jobs.get(job_dict["key"])
             for item in scraping_job.items.iter():
                 item_id = item.get("id")
+
+                # if item was already saved in this job, escape it
                 if item_id in items_done:
                     continue
 
                 if item_id in old_reports:
+                    # if there's a report for this item already saved, update it
                     report = old_reports[item_id]
                     date = datetime.strptime(item.get("date"), "%Y-%m-%d").date()
                     item_price = float(clean_price(item.get("price")))
@@ -61,6 +61,7 @@ def task_get_data_from_scrapinghub():
                         prices_qs[report.ml_id] = new_price
 
                 else:
+                    # if there's no report yet for this item, create it
                     report = Report()
                     report.ml_id = item_id
                     report.title = item.get("title")
@@ -77,7 +78,6 @@ def task_get_data_from_scrapinghub():
 
                 items_done.add(item_id)
 
-            print("Atomic transaction started after %f sec" % (time() - start_time))
             # save everything in one commit
             with transaction.atomic():
                 for report in reports_qs:
@@ -87,10 +87,12 @@ def task_get_data_from_scrapinghub():
                         price.report = report
                         price.save()
 
+            # update jobs db
             job = Job()
             job.code = job_key
             job.save()
-            print("Job done in %f sec" % (time() - start_time))
+            print("Data saved in db for job = %s" % job_key)
+
 
 def clean_price(price):
     return re.sub(r'[^\d+]', '', price)
