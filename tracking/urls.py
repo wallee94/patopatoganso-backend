@@ -1,5 +1,6 @@
 from django.conf.urls import url
+from .views import PriceAPIVIew
 
 urlpatterns = [
-    # url(r'^reports[/]?$', admin.site.urls),
+    url(r'^prices[/]?$', PriceAPIVIew.as_view()),
 ]
