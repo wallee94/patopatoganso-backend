@@ -18,7 +18,7 @@ def task_get_data_from_scrapinghub():
     project = client.get_project(260622)
 
     # iter through last 8 jobs by older first
-    jobs_list = project.jobs.list(spider='mercadolibre.com.mx', state='finished', count=8)[::-1]
+    jobs_list = project.jobs.list(spider='mercadolibre.com.mx', state='finished', count=10)[::-1]
     for job_dict in jobs_list:
         job_key = job_dict.get("key")
 
@@ -50,7 +50,6 @@ def task_get_data_from_scrapinghub():
                     # if the report already exists, the new item must be more recent
                     report = old_reports[item_id]
                     report.last_date = item_date
-                    reports_qs.append(report)
 
                     if report.last_price != item_price:
                         # if price changed, save new price instance
@@ -58,6 +57,9 @@ def task_get_data_from_scrapinghub():
                         new_price.price = item_price
                         new_price.first_date = item_date
                         prices_qs[report.ml_id] = new_price
+                        report.last_price = item_price
+
+                    reports_qs.append(report)
 
                 else:
                     # if there's no report yet for this item, create it
