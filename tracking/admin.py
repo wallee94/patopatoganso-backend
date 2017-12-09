@@ -3,8 +3,8 @@ from .models import *
 
 
 class PriceAdmin(admin.ModelAdmin):
-    list_display = ('report', 'price', 'last_date')
-    readonly_fields = ('last_date',)
+    list_display = ('report', 'price', 'first_date')
+    readonly_fields = ('first_date',)
     raw_id_fields = ('report',)
 
 
