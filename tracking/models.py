@@ -28,7 +28,7 @@ class Report(models.Model):
 class Price(models.Model):
     report = models.ForeignKey(Report, related_name="from_report")
     price = models.FloatField(null=False, blank=False)
-    last_date = models.DateField()
+    first_date = models.DateField()
 
     def __str__(self):
         return self.report.title

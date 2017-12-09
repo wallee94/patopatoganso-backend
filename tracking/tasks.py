@@ -17,8 +17,9 @@ def task_get_data_from_scrapinghub():
     client = ScrapinghubClient(api_key)
     project = client.get_project(260622)
 
-    # iter through last 8 jobs by newer first
-    for job_dict in project.jobs.iter(spider='mercadolibre.com.mx', state='finished', count=8):
+    # iter through last 8 jobs by older first
+    jobs_list = project.jobs.list(spider='mercadolibre.com.mx', state='finished', count=8)[::-1]
+    for job_dict in jobs_list:
         job_key = job_dict.get("key")
 
         # if the job haven't been saved before, save its items
@@ -42,20 +43,20 @@ def task_get_data_from_scrapinghub():
                 if item_id in items_done:
                     continue
 
-                date = datetime.strptime(item.get("date"), "%Y-%m-%d").date()
+                item_date = datetime.strptime(item.get("date"), "%Y-%m-%d").date()
                 item_price = float(clean_price(item.get("price")))
                 if item_id in old_reports:
-                    # if the report already exists, it must be newer than the item due to the jobs iter order
-                    # so we just have to update the first_date field
+
+                    # if the report already exists, the new item must be more recent
                     report = old_reports[item_id]
-                    report.first_date = date
+                    report.last_date = item_date
                     reports_qs.append(report)
 
                     if report.last_price != item_price:
                         # if price changed, save new price instance
                         new_price = Price()
                         new_price.price = item_price
-                        new_price.last_date = date
+                        new_price.last_date = item_date
                         prices_qs[report.ml_id] = new_price
 
                 else:
@@ -66,15 +67,15 @@ def task_get_data_from_scrapinghub():
                     report.title = title
                     report.clean_title = get_clean_title(title)
                     report.url = item.get("url")
-                    report.first_date = date
-                    report.last_date = date
+                    report.first_date = item_date
+                    report.last_date = item_date
                     report.last_price = item_price
                     report.is_new = item.get("is_new")
                     reports_qs.append(report)
 
                     new_price = Price()
                     new_price.price = item_price
-                    new_price.last_date = date
+                    new_price.last_date = item_date
                     prices_qs[report.ml_id] = new_price
 
                 items_done.add(item_id)
