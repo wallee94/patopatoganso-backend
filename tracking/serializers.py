@@ -6,5 +6,5 @@ from .models import Price
 class PriceResponseSerializer(serializers.ModelSerializer):
 
     class Meta:
-        model = Price,
+        model = Price
         fields = '__all__'
