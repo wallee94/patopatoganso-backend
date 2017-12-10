@@ -7,7 +7,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
 
-DEBUG = False
+DEBUG = True
 
 if DEBUG:
     SECRET_KEY = '$v%)q_njh2cth&$12isnpiy1q6l4s!%4-m_(hd7w!ep#3*z$oj'
@@ -48,9 +48,9 @@ MIDDLEWARE = [
 ROOT_URLCONF = 'mercadolibre_backend.urls'
 
 REST_FRAMEWORK = {
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated',
-    ),
+    # 'DEFAULT_PERMISSION_CLASSES': (
+    #     'rest_framework.permissions.IsAuthenticated',
+    # ),
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.TokenAuthentication',
     )
