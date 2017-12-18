@@ -7,7 +7,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/1.11/howto/deployment/checklist/
 
-DEBUG = False
+DEBUG = True
 
 if DEBUG:
     SECRET_KEY = '$v%)q_njh2cth&$12isnpiy1q6l4s!%4-m_(hd7w!ep#3*z$oj'
@@ -176,3 +176,18 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
+
+# Report emails settings
+LIST_EMAIL_MEMBERS = []
+if not DEBUG:
+    email_cred_auth = os.path.join(BASE_DIR, '/etc/email_cred.txt')
+    with open(email_cred_auth) as f:
+        creds = f.read()
+        REPORT_EMAIL_SERVER, REPORT_EMAIL_USER, REPORT_EMAIL_PASSWORD = creds.strip().split(",")
+
+    list_email_members = os.path.join(BASE_DIR, '/etc/list_email_members.txt')
+    with open(list_email_members) as f:
+        for line in f:
+            LIST_EMAIL_MEMBERS.append(line.strip())
+else:
+    REPORT_EMAIL_SERVER, REPORT_EMAIL_USER, REPORT_EMAIL_PASSWORD = "localhost", "example@gmail.com", "any_p455w0rd"

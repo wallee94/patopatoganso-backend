@@ -7,6 +7,9 @@ from celery import task
 from django.db import transaction
 from scrapinghub import ScrapinghubClient
 from .utils import get_clean_title
+import smtplib
+from email.mime.text import MIMEText
+from django.conf import settings
 
 from .models import Report, Price, Job
 
@@ -97,7 +100,23 @@ def task_get_data_from_scrapinghub():
             job.save()
             print("Data saved in db for job = %s" % job_key)
 
+    send_email_report()
+
 
 def clean_price(price):
     return re.sub(r'[^\d+\.]', '', price)
+
+
+def send_email_report():
+    server = smtplib.SMTP(settings.REPORT_EMAIL_SERVER)
+    server.ehlo()
+    server.starttls()
+    server.login(settings.REPORT_EMAIL_USER, settings.REPORT_EMAIL_PASSWORD)
+
+    for member in settings.LIST_EMAIL_MEMBERS:
+        msg = MIMEText("Los productos de mercadolibre.com.mx fueron exitosamente guardados en la base de datos")
+        msg['Subject'] = "mercadolibre.com.mx - " + str(datetime.now().date())
+        msg['From'] = settings.REPORT_EMAIL_USER
+        msg['To'] = member
+        server.send_message(msg)
 
