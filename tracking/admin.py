@@ -12,6 +12,10 @@ class JobAdmin(admin.ModelAdmin):
     list_display = ('code', 'date')
 
 
+class KeywordAdmin(admin.ModelAdmin):
+    list_display = ('keyword', )
+
+
 class ReportAdmin(admin.ModelAdmin):
     list_display = ('title', 'last_date', 'last_price')
 
@@ -19,3 +23,4 @@ class ReportAdmin(admin.ModelAdmin):
 admin.site.register(Report, admin_class=ReportAdmin)
 admin.site.register(Price, admin_class=PriceAdmin)
 admin.site.register(Job, admin_class=JobAdmin)
+admin.site.register(Keyword, admin_class=KeywordAdmin)
