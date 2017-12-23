@@ -6,8 +6,28 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 import numpy as np
 
-from .models import Price, Report
+from .models import Price, Report, Keyword
+from .serializers import KeywordSerializer
 from .utils import get_clean_title
+
+
+class KeywordAPIView(APIView):
+    def get(self, request):
+        keywords_data = {
+            "keywords": Keyword.objects.values_list('keyword', flat=True)
+        }
+        return Response(data=keywords_data, status=status.HTTP_200_OK)
+
+    def put(self, request):
+        if request.user.is_staff:
+            keyword_ser = KeywordSerializer(data=request.data)
+            if keyword_ser.is_valid():
+                keyword_obj = keyword_ser.save()
+                return Response(data={"details": "keyword created with id = [%d]" % keyword_obj.id},
+                                status=status.HTTP_200_OK)
+            return Response(data=keyword_ser.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(data={"details": "No valid credential provided"}, status=status.HTTP_401_UNAUTHORIZED)
+
 
 
 class PriceAPIVIew(APIView):

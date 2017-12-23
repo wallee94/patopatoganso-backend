@@ -19,7 +19,12 @@ class Report(models.Model):
     first_date = models.DateField()
     last_date = models.DateField()
     last_price = models.FloatField(null=False, blank=False)
-    is_new = models.BooleanField()
+    is_new = models.BooleanField(default=True)
+    free_shipping = models.BooleanField(default=False)
+    accepts_mercadopago = models.BooleanField(default=False)
+    sold_quantity = models.IntegerField(default=0)
+    available_quantity = models.IntegerField(default=1)
+    address = models.CharField(max_length=70, null=True, blank=True)
 
     def __str__(self):
         return self.title
@@ -40,3 +45,10 @@ class Job(models.Model):
 
     def __str__(self):
         return self.code
+
+
+class Keyword(models.Model):
+    keyword = models.CharField(max_length=50, null=False, blank=False, unique=True)
+
+    def __str__(self):
+        return self.keyword

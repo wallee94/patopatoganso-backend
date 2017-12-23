@@ -1,17 +1,16 @@
 from __future__ import absolute_import, unicode_literals
 
+import smtplib
 from datetime import datetime, timedelta
+from email.mime.text import MIMEText
 
-import re
 from celery import task
+from django.conf import settings
 from django.db import transaction
 from scrapinghub import ScrapinghubClient
-from .utils import get_clean_title
-import smtplib
-from email.mime.text import MIMEText
-from django.conf import settings
 
 from .models import Report, Price, Job
+from .utils import get_clean_title
 
 
 @task()
@@ -21,7 +20,7 @@ def task_get_data_from_scrapinghub():
     project = client.get_project(260622)
 
     # iter through last 8 jobs by older first
-    jobs_list = project.jobs.list(spider='mercadolibre.com.mx', state='finished', count=10)[::-1]
+    jobs_list = project.jobs.list(spider='api-mercadolibre.com.mx', state='finished', count=10)[::-1]
     for job_dict in jobs_list:
         job_key = job_dict.get("key")
 
@@ -31,68 +30,58 @@ def task_get_data_from_scrapinghub():
             print("Getting data from job = %s" % job_key)
 
             # import recent reports from db to cache to avoid multiple commits
-            for report in Report.objects.filter(last_date__gte=str(datetime.now().date() - timedelta(7))):
-                old_reports[report.ml_id] = report
+            for id, ml_id, last_price in Report.objects.filter(last_date__gte=str(datetime.now().date() - timedelta(7))).values_list('id', 'ml_id', 'last_price'):
+                old_reports[ml_id] = {"id": id, "last_price": last_price}
 
             items_done = set()
-            prices_qs = {}
-            reports_qs = []
-
             scraping_job = project.jobs.get(job_dict["key"])
-            for item in scraping_job.items.iter():
-                item_id = item.get("id")
-
-                # if item was already saved in this job, escape it
-                if item_id in items_done:
-                    continue
-
-                item_date = datetime.strptime(item.get("date"), "%Y-%m-%d").date()
-                item_price = float(clean_price(item.get("price")))
-                if item_id in old_reports:
-
-                    # if the report already exists, the new item must be more recent
-                    report = old_reports[item_id]
-                    report.last_date = item_date
-
-                    if report.last_price != item_price:
-                        # if price changed, save new price instance
-                        new_price = Price()
-                        new_price.price = item_price
-                        new_price.first_date = item_date
-                        prices_qs[report.ml_id] = new_price
-                        report.last_price = item_price
-
-                    reports_qs.append(report)
-
-                else:
-                    # if there's no report yet for this item, create it
-                    title = item.get("title")
-                    report = Report()
-                    report.ml_id = item_id
-                    report.title = title
-                    report.clean_title = get_clean_title(title)
-                    report.url = item.get("url")
-                    report.first_date = item_date
-                    report.last_date = item_date
-                    report.last_price = item_price
-                    report.is_new = item.get("is_new")
-                    reports_qs.append(report)
-
-                    new_price = Price()
-                    new_price.price = item_price
-                    new_price.first_date = item_date
-                    prices_qs[report.ml_id] = new_price
-
-                items_done.add(item_id)
 
             # save everything in one commit
             with transaction.atomic():
-                for report in reports_qs:
-                    report.save()
-                    price = prices_qs.get(report.ml_id)
-                    if price:
-                        price.report = report
-                        price.save()
+                for item in scraping_job.items.iter():
+                    item_id = item.get("id")
+
+                    # if item was already saved in this job, escape it
+                    if item_id in items_done:
+                        continue
+
+                    item_date = datetime.strptime(item.get("date"), "%Y-%m-%d").date()
+                    item_price = item.get("price")
+                    if item_id in old_reports:
+                        # if the report already exists, the new item must be more recent
+                        report = old_reports[item_id]
+                        if report.get("last_price") != item_price:
+                            # if price changed, save new price instance
+                            new_price = Price(report_id=report.get("id"), price=item_price, first_date=item_date)
+                            new_price.save()
+
+                            Report.objects.filter(pk=report.get("id")).update(last_date=item_date, last_price=item_price)
+
+                        else:
+                            Report.objects.filter(pk=report.get("id")).update(last_date=item_date)
+
+                    else:
+                        new_report = Report(
+                            ml_id=item_id,
+                            title=item.get("title"),
+                            clean_title=get_clean_title(item.get("title")),
+                            url=item.get("url"),
+                            first_date=item_date,
+                            last_date=item_date,
+                            last_price=item_price,
+                            is_new=item.get("is_new"),
+                            free_shipping=item.get("free_shipping"),
+                            accepts_mercadopago=item.get("accepts_mercadopago"),
+                            sold_quantity=item.get("sold_quantity"),
+                            available_quantity=item.get("available_quantity"),
+                            address=item.get("address")
+                        )
+                        new_report.save()
+
+                        new_price = Price(report=new_report, price=item_price, first_date=item_date)
+                        new_price.save()
+
+                    items_done.add(item_id)
 
             # update jobs db
             job = Job()
@@ -101,10 +90,6 @@ def task_get_data_from_scrapinghub():
             print("Data saved in db for job = %s" % job_key)
 
     send_email_report()
-
-
-def clean_price(price):
-    return re.sub(r'[^\d+\.]', '', price)
 
 
 def send_email_report():
@@ -119,4 +104,3 @@ def send_email_report():
         msg['From'] = settings.REPORT_EMAIL_USER
         msg['To'] = member
         server.send_message(msg)
-
