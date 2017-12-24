@@ -21,7 +21,7 @@ def export_reports_to_es():
     es = Elasticsearch("http://45.77.161.88:9200")
 
     actions = []
-    for report in Report.objects.all().iterator():
+    for i, report in enumerate(Report.objects.all()):
         action = {
             "_op_type": "create",
             "_index": "ppg-mml",
@@ -39,4 +39,11 @@ def export_reports_to_es():
             "address": report.address
         }
         actions.append(action)
+
+        if i % 2000 == 0:
+            print("sending chunk with 2000 elements")
+            res = bulk(es, actions)
+            print(res)
+            actions = []
+
     bulk(es, actions)
