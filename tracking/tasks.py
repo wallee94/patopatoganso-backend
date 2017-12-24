@@ -61,10 +61,10 @@ def task_get_data_from_scrapinghub():
                             Report.objects.filter(pk=report.get("id")).update(last_date=item_date)
 
                     else:
-                        title = item.get("title")[:150]
-                        url = item.get("url")
+                        title = item["title"][:150]
+                        url = item["url"]
                         if len(url) > 200:
-                            url_id = item.get("site_id") + "-" + item.get("id").split(item.get("site_id"))[-1]
+                            url_id = item.get("site_id", "MLM") + "-" + item_id.split(item.get("site_id", "MLM"))[-1]
                             url = "https://articulo.mercadolibre.com.mx/" + url_id + "-product-_JM"
                         new_report = Report(
                             ml_id=item_id,
