@@ -21,22 +21,24 @@ def export_reports_to_es():
     es = Elasticsearch("http://45.77.161.88:9200")
 
     actions = []
-    for i, report in enumerate(Report.objects.all()):
+    for i, report in enumerate(Report.objects.all().values("id", "ml_id", "title", "first_date", "last_date",
+                                                           "is_new", "free_shipping", "accepts_mercadopago",
+                                                           "sold_quantity", "address", "last_price")):
         action = {
             "_op_type": "create",
             "_index": "ppg-mml",
             "_type": "report",
-            "_id": str(report.id),
-            "ml-id": report.ml_id,
-            "title": report.title,
-            "first_date": report.first_date,
-            "last_date": report.last_date,
-            "last_price": report.last_price,
-            "is_new": report.is_new,
-            "free_shipping": report.free_shipping,
-            "accepts_mercadopago": report.accepts_mercadopago,
-            "sold_quantity": report.sold_quantity,
-            "address": report.address
+            "_id": str(report["id"]),
+            "ml-id": report["ml_id"],
+            "title": report["title"],
+            "first_date": report["first_date"],
+            "last_date": report["last_date"],
+            "is_new": report["is_new"],
+            "free_shipping": report["free_shipping"],
+            "last_price": report["last_price"],
+            "accepts_mercadopago": report["accepts_mercadopago"],
+            "sold_quantity": report["sold_quantity"],
+            "address": report["address"]
         }
         actions.append(action)
 
