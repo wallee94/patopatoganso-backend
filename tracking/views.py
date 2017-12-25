@@ -52,7 +52,7 @@ class PriceAPIVIew(APIView):
 
         es = Elasticsearch("http://45.77.161.88:9200")
         body = {
-            "size": 50,
+            "size": 15,
             "query": {
                 "bool": {
                     "must": [
