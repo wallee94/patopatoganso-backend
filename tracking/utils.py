@@ -1,6 +1,7 @@
 import re
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import bulk
+
 from .models import Report
 
 
@@ -17,6 +18,8 @@ def get_clean_title(title):
     return clean_title.strip()
 
 
+# CAUTION: don't use this method in server. It requires a lot of RAM.
+#  as a rule of thumb, 1,000,000 reports need 1.11 GB aprox
 def export_reports_to_es():
     es = Elasticsearch("http://45.77.161.88:9200")
 
@@ -42,10 +45,9 @@ def export_reports_to_es():
         }
         actions.append(action)
 
+        # save data un bulk with 2000 items each
         if i % 2000 == 0:
-            print("sending chunk with 2000 elements")
-            res = bulk(es, actions)
-            print(res)
+            bulk(es, actions)
             actions = []
 
     bulk(es, actions)

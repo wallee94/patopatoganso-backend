@@ -1,14 +1,14 @@
 from datetime import datetime, timedelta
 
+import numpy as np
+from elasticsearch import Elasticsearch
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
-import numpy as np
 
-from .models import Price, Report, Keyword
+from .models import Price, Keyword
 from .serializers import KeywordSerializer
-from .utils import get_clean_title
 
 
 class KeywordAPIView(APIView):
@@ -29,13 +29,11 @@ class KeywordAPIView(APIView):
         return Response(data={"details": "No valid credential provided"}, status=status.HTTP_401_UNAUTHORIZED)
 
 
-
 class PriceAPIVIew(APIView):
     permission_classes = (AllowAny, )
 
     def get(self, request):
         q = request.query_params.get("q")
-        fit = request.query_params.get("fit", "term").strip()
         is_new = request.query_params.get("new", "true").strip()
         if not q:
             return Response(data={"details": "q query param missing"}, status=status.HTTP_400_BAD_REQUEST)
@@ -43,7 +41,6 @@ class PriceAPIVIew(APIView):
         q = q.strip()
         today = datetime.now().date()
         date_gte = today - timedelta(30)  # shows last 30 days
-        clean_title = get_clean_title(q)
 
         # validations
         if is_new == "true":
@@ -53,15 +50,30 @@ class PriceAPIVIew(APIView):
         else:
             return Response(data={"details": "new flag unknown"}, status=status.HTTP_400_BAD_REQUEST)
 
-        reports = Report.objects.filter(last_date__gte=date_gte, is_new=is_new)
-        if fit == "term":
-            words = clean_title.split()[:10]  # 10 words is the limit
-            for word in words:
-                reports = reports.filter(clean_title__contains=word.strip())
-        elif fit == "exact":
-            reports = Report.objects.filter(clean_title__contains=q)
-        else:
-            return Response(data={"details": "fit method unknown"}, status=status.HTTP_400_BAD_REQUEST)
+        es = Elasticsearch("http://45.77.161.88:9200")
+        body = {
+            "size": 50,
+            "query": {
+                "bool": {
+                    "must": [
+                        {
+                            "match": {
+                                "title": q
+                            }
+                        },
+                        {
+                            "match": {
+                                "is_new": is_new
+                            }
+                        }
+                    ]
+                }
+            },
+            "_source": ["title"]
+        }
+
+        hits = es.search(index="ppg-mml", doc_type="report", body=body).get("hits", {"hits": []}).get("hits", [])
+        reports = list(map(lambda x: x.get("_id"), hits))
 
         # order prices by report and then by date
         prices = []

@@ -7,6 +7,8 @@ from email.mime.text import MIMEText
 from celery import task
 from django.conf import settings
 from django.db import transaction
+from elasticsearch import Elasticsearch
+from elasticsearch.helpers import bulk
 from scrapinghub import ScrapinghubClient
 
 from .models import Report, Price, Job
@@ -33,8 +35,11 @@ def task_get_data_from_scrapinghub():
             for id, ml_id, last_price in Report.objects.filter(last_date__gte=str(datetime.now().date() - timedelta(7))).values_list('id', 'ml_id', 'last_price'):
                 old_reports[ml_id] = {"id": id, "last_price": last_price}
 
-            items_done = set()
             scraping_job = project.jobs.get(job_dict["key"])
+
+            items_done = set()  # to avoid saving two times the same item
+            actions = []  # array used to save new reports and updates in ES using bulk
+            item_date = None  # all items in a job share same item_date
 
             # save everything in one commit
             with transaction.atomic():
@@ -45,7 +50,8 @@ def task_get_data_from_scrapinghub():
                     if item_id in items_done:
                         continue
 
-                    item_date = datetime.strptime(item.get("date"), "%Y-%m-%d").date()
+                    if not item_date:
+                        item_date = datetime.strptime(item.get("date"), "%Y-%m-%d").date()
                     item_price = item.get("price")
                     if item_id in old_reports:
                         # if the report already exists, the new item must be more recent
@@ -56,9 +62,26 @@ def task_get_data_from_scrapinghub():
                             new_price.save()
 
                             Report.objects.filter(pk=report.get("id")).update(last_date=item_date, last_price=item_price)
+                            action = {
+                                "_op_type": "update",
+                                "_index": "ppg-mml",
+                                "_type": "report",
+                                "_id": str(report["id"]),
+                                "last_date": report["last_date"],
+                                "last_price": report["last_price"],
+                            }
 
                         else:
                             Report.objects.filter(pk=report.get("id")).update(last_date=item_date)
+                            action = {
+                                "_op_type": "update",
+                                "_index": "ppg-mml",
+                                "_type": "report",
+                                "_id": str(report["id"]),
+                                "last_date": report["last_date"],
+                            }
+
+                        actions.append(action)
 
                     else:
                         title = item["title"][:150]
@@ -87,6 +110,33 @@ def task_get_data_from_scrapinghub():
                         new_price.save()
 
                     items_done.add(item_id)
+
+            # update changes and add new reports to ES
+            for report in Report.objects.filter(first_date=item_date).values("id", "ml_id", "title", "first_date", "last_date","is_new",
+                                                                             "free_shipping", "accepts_mercadopago","sold_quantity", "address", "last_price"):
+                action = {
+                    "_op_type": "create",
+                    "_index": "ppg-mml",
+                    "_type": "report",
+                    "_id": str(report["id"]),
+                    "ml-id": report["ml_id"],
+                    "title": report["title"],
+                    "first_date": report["first_date"],
+                    "last_date": report["last_date"],
+                    "is_new": report["is_new"],
+                    "free_shipping": report["free_shipping"],
+                    "last_price": report["last_price"],
+                    "accepts_mercadopago": report["accepts_mercadopago"],
+                    "sold_quantity": report["sold_quantity"],
+                    "address": report["address"]
+                }
+
+                actions.append(action)
+
+            es = Elasticsearch("http://45.77.161.88:9200")
+            bulk_size = 2000
+            for i in range(0, len(actions), bulk_size):
+                bulk(es, actions[i:i + bulk_size])
 
             # update jobs db
             job = Job()
