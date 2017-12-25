@@ -67,8 +67,10 @@ def task_get_data_from_scrapinghub():
                                 "_index": "ppg-mml",
                                 "_type": "report",
                                 "_id": str(report["id"]),
-                                "last_date": item_date,
-                                "last_price": item_price,
+                                "doc": {
+                                    "last_date": item_date,
+                                    "last_price": item_price
+                                }
                             }
 
                         else:
@@ -78,7 +80,9 @@ def task_get_data_from_scrapinghub():
                                 "_index": "ppg-mml",
                                 "_type": "report",
                                 "_id": str(report["id"]),
-                                "last_date": item_date,
+                                "doc": {
+                                    "last_date": item_date
+                                }
                             }
 
                         actions.append(action)
