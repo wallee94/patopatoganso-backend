@@ -29,10 +29,10 @@ def task_get_data_from_scrapinghub():
         # if the job haven't been saved before, save its items
         if job_key and not Job.objects.filter(code=job_key):
             old_reports = {}
-            print("Getting data from job = %s" % job_key)
+            print("Getting data from job = %s..." % job_key)
 
             # import recent reports from db to cache to avoid multiple commits
-            for id, ml_id, last_price in Report.objects.filter(last_date__gte=str(datetime.now().date() - timedelta(7))).values_list('id', 'ml_id', 'last_price'):
+            for id, ml_id, last_price in Report.objects.filter(last_date__gte=str(datetime.now().date() - timedelta(2))).values_list('id', 'ml_id', 'last_price'):
                 old_reports[ml_id] = {"id": id, "last_price": last_price}
 
             scraping_job = project.jobs.get(job_dict["key"])
@@ -116,6 +116,7 @@ def task_get_data_from_scrapinghub():
                     items_done.add(item_id)
 
             # update changes and add new reports to ES
+            print("Reports saved in DB. Updating ES reports...")
             for report in Report.objects.filter(first_date=item_date).values("id", "ml_id", "title", "first_date", "last_date","is_new",
                                                                              "free_shipping", "accepts_mercadopago","sold_quantity", "address", "last_price"):
                 action = {

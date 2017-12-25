@@ -65,6 +65,13 @@ class PriceAPIVIew(APIView):
                             "match": {
                                 "is_new": is_new
                             }
+                        },
+                        {
+                            "range": {
+                                "last_date": {
+                                    "gte": date_gte
+                                }
+                            }
                         }
                     ]
                 }
