@@ -50,7 +50,7 @@ def task_get_data_from_scrapinghub():
                     if item_id in items_done:
                         continue
 
-                    if not item_date:
+                    if item_date is None:
                         item_date = datetime.strptime(item.get("date"), "%Y-%m-%d").date()
                     item_price = item.get("price")
                     if item_id in old_reports:
@@ -67,8 +67,8 @@ def task_get_data_from_scrapinghub():
                                 "_index": "ppg-mml",
                                 "_type": "report",
                                 "_id": str(report["id"]),
-                                "last_date": report["last_date"],
-                                "last_price": report["last_price"],
+                                "last_date": item_date,
+                                "last_price": item_price,
                             }
 
                         else:
@@ -78,7 +78,7 @@ def task_get_data_from_scrapinghub():
                                 "_index": "ppg-mml",
                                 "_type": "report",
                                 "_id": str(report["id"]),
-                                "last_date": report["last_date"],
+                                "last_date": item_date,
                             }
 
                         actions.append(action)
@@ -98,7 +98,7 @@ def task_get_data_from_scrapinghub():
                             last_date=item_date,
                             last_price=item_price,
                             is_new=item.get("is_new"),
-                            free_shipping=item.get("free_shipping"),
+                            free_shipping=item.get("free_shipping", item_price > 549),
                             accepts_mercadopago=item.get("accepts_mercadopago"),
                             sold_quantity=item.get("sold_quantity"),
                             available_quantity=item.get("available_quantity"),
