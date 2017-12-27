@@ -85,7 +85,7 @@ class PriceAPIVIew(APIView):
         last_prices = list(map(lambda x: x.get("_source", {}).get("last_price"), hits))
         mean = np.mean(last_prices)
         std = np.std(last_prices)
-        hits = list(filter(lambda x: mean - std <= x.get("_source", {}).get("last_price") <= mean - std, hits))
+        hits = list(filter(lambda x: mean - std <= x.get("_source", {}).get("last_price") <= mean + std, hits))
 
         reports = list(map(lambda x: x.get("_id"), hits))
 
