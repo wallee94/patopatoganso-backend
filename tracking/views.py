@@ -50,9 +50,11 @@ class PriceAPIVIew(APIView):
         else:
             return Response(data={"details": "new flag unknown"}, status=status.HTTP_400_BAD_REQUEST)
 
+        size = int(20 + 120/(1 + 2.71828**(len(q.split())-2)))  # sigmoid function
+
         es = Elasticsearch("http://45.77.161.88:9200")
         body = {
-            "size": 20,
+            "size": size,
             "query": {
                 "bool": {
                     "must": [
@@ -80,11 +82,10 @@ class PriceAPIVIew(APIView):
         }
 
         hits = es.search(index="ppg-mml", doc_type="report", body=body).get("hits", {"hits": []}).get("hits", [])
-        # last_prices = list(map(lambda x: x.get("_source", {}).get("last_price"), hits))
-        # hits_mean = np.mean(last_prices)
-        # hits_std = np.std(last_prices)
-        # if hits_std > hits_mean*0.4:
-        #     hits = list(filter(lambda x: x.get("_source", {}).get("last_price") > hits_mean, hits))
+        last_prices = list(map(lambda x: x.get("_source", {}).get("last_price"), hits))
+        mean = np.mean(last_prices)
+        std = np.std(last_prices)
+        hits = list(filter(lambda x: mean - std <= x.get("_source", {}).get("last_price") <= mean - std, hits))
 
         reports = list(map(lambda x: x.get("_id"), hits))
 
