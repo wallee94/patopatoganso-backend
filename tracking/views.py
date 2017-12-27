@@ -125,4 +125,4 @@ class PriceAPIVIew(APIView):
                     "max": np.max(response_data[label]),
                     "total": len(response_data[label])
                 }
-        return Response(data={"res": hits}, status=status.HTTP_200_OK)
+        return Response(data=response_data, status=status.HTTP_200_OK)
