@@ -83,11 +83,15 @@ class PriceAPIVIew(APIView):
 
         es_response = es.search(index="ppg-mml", doc_type="report", body=body)
 
-        max_score = es_response.get("hits", {}).get("max_score")
-        hits = es_response.get("hits", {"hits": []}).get("hits", [])
-        hits = list(filter(lambda x: max_score*3/4 <= x.get("_score", 0), hits))
+        if not es_response["hits"]["hits"]:
+            return Response(data={}, status=status.HTTP_200_OK)
 
-        reports = list(map(lambda x: x.get("_id"), hits))
+        max_score = es_response["hits"]["max_score"]
+        min_price = es_response["hits"]["hits"][0]["_source"]["last_price"]
+        hits = es_response["hits"]["hits"]
+        hits = list(filter(lambda x: max_score*3/4 <= x["_score"] and min_price <= x["_source"]["last_price"], hits))
+
+        reports = list(map(lambda x: x["_id"], hits))
 
         # order prices by report and then by date
         prices = []
@@ -121,4 +125,4 @@ class PriceAPIVIew(APIView):
                     "max": np.max(response_data[label]),
                     "total": len(response_data[label])
                 }
-        return Response(data=response_data, status=status.HTTP_200_OK)
+        return Response(data={"res": hits}, status=status.HTTP_200_OK)
