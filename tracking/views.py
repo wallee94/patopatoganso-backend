@@ -80,11 +80,11 @@ class PriceAPIVIew(APIView):
         }
 
         hits = es.search(index="ppg-mml", doc_type="report", body=body).get("hits", {"hits": []}).get("hits", [])
-        last_prices = list(map(lambda x: x.get("last_price"), hits))
+        last_prices = list(map(lambda x: x.get("_source", {}).get("last_price"), hits))
         hits_mean = np.mean(last_prices)
         hits_std = np.std(last_prices)
         if hits_std > hits_mean*0.6:
-            hits = list(filter(lambda x: x.get("last_price") > hits_mean, hits))
+            hits = list(filter(lambda x: x.get("_source", {}).get("last_price") > hits_mean, hits))
 
         reports = list(map(lambda x: x.get("_id"), hits))
 
