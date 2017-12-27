@@ -49,6 +49,7 @@ class Job(models.Model):
 
 class Keyword(models.Model):
     keyword = models.CharField(max_length=50, null=False, blank=False, unique=True)
+    offset = models.IntegerField(default=1000)
 
     def __str__(self):
         return self.keyword

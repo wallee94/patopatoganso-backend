@@ -14,7 +14,7 @@ from .serializers import KeywordSerializer
 class KeywordAPIView(APIView):
     def get(self, request):
         keywords_data = {
-            "keywords": Keyword.objects.values_list('keyword', flat=True)
+            "keywords": Keyword.objects.values('keyword', 'offset')
         }
         return Response(data=keywords_data, status=status.HTTP_200_OK)
 
