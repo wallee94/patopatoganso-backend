@@ -80,11 +80,11 @@ class PriceAPIVIew(APIView):
         }
 
         hits = es.search(index="ppg-mml", doc_type="report", body=body).get("hits", {"hits": []}).get("hits", [])
-        last_prices = list(map(lambda x: x.get("_source", {}).get("last_price"), hits))
-        hits_mean = np.mean(last_prices)
-        hits_std = np.std(last_prices)
-        if hits_std > hits_mean*0.4:
-            hits = list(filter(lambda x: x.get("_source", {}).get("last_price") > hits_mean, hits))
+        # last_prices = list(map(lambda x: x.get("_source", {}).get("last_price"), hits))
+        # hits_mean = np.mean(last_prices)
+        # hits_std = np.std(last_prices)
+        # if hits_std > hits_mean*0.4:
+        #     hits = list(filter(lambda x: x.get("_source", {}).get("last_price") > hits_mean, hits))
 
         reports = list(map(lambda x: x.get("_id"), hits))
 
@@ -117,6 +117,7 @@ class PriceAPIVIew(APIView):
                     "mean": np.mean(response_data[label]),
                     "std": np.std(response_data[label]),
                     "min": np.min(response_data[label]),
-                    "max": np.max(response_data[label])
+                    "max": np.max(response_data[label]),
+                    "total": len(response_data[label])
                 }
         return Response(data=response_data, status=status.HTTP_200_OK)
