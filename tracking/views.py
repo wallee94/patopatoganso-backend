@@ -87,7 +87,7 @@ class PriceAPIVIew(APIView):
             return Response(data={}, status=status.HTTP_200_OK)
 
         max_score = es_response["hits"]["max_score"]
-        min_price = es_response["hits"]["hits"][0]["_source"]["last_price"]
+        min_price = es_response["hits"]["hits"][0]["_source"]["last_price"]/6
         hits = es_response["hits"]["hits"]
         hits = list(filter(lambda x: max_score*3/4 <= x["_score"] and min_price <= x["_source"]["last_price"], hits))
 
