@@ -19,7 +19,7 @@ def get_clean_title(title):
 
 
 # CAUTION: don't use this method in server. It requires a lot of RAM.
-#  as a rule of thumb, 1,000,000 reports need 1.11 GB aprox
+# As a rule of thumb, 1,000,000 reports need 1.11 GB aprox
 def export_reports_to_es():
     es = Elasticsearch("http://45.77.161.88:9200")
 
