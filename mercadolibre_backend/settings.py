@@ -16,7 +16,7 @@ else:
     with open(secret_key_path) as f:
         SECRET_KEY = f.read().strip()
 
-ALLOWED_HOSTS = ["45.32.196.12", "patopatoganso.com.mx"]
+ALLOWED_HOSTS = ["207.148.2.84", "patopatoganso.com.mx"]
 if DEBUG:
     ALLOWED_HOSTS.append("localhost")
 
